@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MPJ Voter Search</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+input {
+    width: 320px;
+    padding: 10px;
+    font-size: 15px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    font-size: 14px;
+}
+
+tr:nth-child(even) { background: #f2f2f2; }
+
+#pagination {
+    margin-top: 15px;
+}
+
+#pagination button {
+    padding: 6px 10px;
+    margin: 2px;
+    cursor: pointer;
+}
+
+#count {
+    margin-top: 10px;
+    color: #555;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🔍 MPJ Voter Search</h2>
+
+<input id="q" placeholder="Enter name..." />
+
+<div id="count"></div>
+
+<table>
+<thead>
+<tr>
+    <th>Name</th>
+    <th>Relative</th>
+    <th>Gender</th>
+    <th>Age</th>
+    <th>House</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<div id="pagination"></div>
+
+<script>
+let DATA = [];
+let FILTERED = [];
+let PAGE_SIZE = 50;
+let CURRENT_PAGE = 1;
+
+fetch("data.json")
+.then(r => r.json())
+.then(d => {
+    DATA = d;
+    FILTERED = DATA;
+    render();
+});
+
+document.getElementById("q").addEventListener("input", e => {
+    let q = e.target.value.toLowerCase();
+    CURRENT_PAGE = 1;
+
+    FILTERED = DATA.filter(r =>
+        r.voter_name.toLowerCase().includes(q)
+    );
+
+    render();
+});
+
+function render() {
+    let start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+    let end = start + PAGE_SIZE;
+    let pageData = FILTERED.slice(start, end);
+
+    let rows = "";
+    pageData.forEach(r => {
+        rows += `
+        <tr>
+            <td>${r.voter_name}</td>
+            <td>${r.relative_name}</td>
+            <td>${r.gender}</td>
+            <td>${r.age}</td>
+            <td>${r.house}</td>
+        </tr>`;
+    });
+
+    document.getElementById("tbody").innerHTML = rows;
+
+    let totalPages = Math.ceil(FILTERED.length / PAGE_SIZE);
+
+    document.getElementById("count").innerText =
+        `Showing ${pageData.length} of ${FILTERED.length} results`;
+
+    renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+    let html = "";
+
+    if (CURRENT_PAGE > 1) {
+        html += `<button onclick="go(${CURRENT_PAGE - 1})">◀ Prev</button>`;
+    }
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === CURRENT_PAGE) {
+            html += `<button disabled><b>${i}</b></button>`;
+        } else if (
+            i === 1 ||
+            i === totalPages ||
+            Math.abs(i - CURRENT_PAGE) <= 2
+        ) {
+            html += `<button onclick="go(${i})">${i}</button>`;
+        }
+    }
+
+    if (CURRENT_PAGE < totalPages) {
+        html += `<button onclick="go(${CURRENT_PAGE + 1})">Next ▶</button>`;
+    }
+
+    document.getElementById("pagination").innerHTML = html;
+}
+
+function go(p) {
+    CURRENT_PAGE = p;
+    render();
+}
+</script>
+
+</body>
+</html>
